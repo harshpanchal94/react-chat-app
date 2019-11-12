@@ -2,6 +2,8 @@ import React from 'react';
 import Chatkit from '@pusher/chatkit-client';
 import MessageList from './components/MessageList';
 import SendMessageForm from './components/SendMessageForm';
+import TypingIndicator from './components/TypingIndicator';
+import WhosOnlineList from './components/WhosOnlineList';
 
 class ChatScreen extends React.Component {
     constructor() {
@@ -28,7 +30,7 @@ class ChatScreen extends React.Component {
 
         chatManager.connect()
             .then(currentUser => {
-                this.setState({currentUser})
+                this.setState({ currentUser })
                 return currentUser.subscribeToRoomMultipart({
                     roomId: '8d3d7c64-3c19-4bcf-b523-d30884c52323',
                     messageLimit: 100,
@@ -47,11 +49,14 @@ class ChatScreen extends React.Component {
                             this.setState({
                                 usersWhoAreTyping: this.state.usersWhoAreTyping.filter(username => username !== user.name)
                             })
+                        },
+                        onPresenceChanged: () => {
+                            this.forceUpdate()
                         }
                     }
                 })
             }).then(currentRoom => {
-                this.setState({currentRoom})
+                this.setState({ currentRoom })
             })
             .catch(error => console.error(error))
     }
@@ -70,12 +75,45 @@ class ChatScreen extends React.Component {
     }
 
     render() {
+        const { usersWhoAreTyping, currentRoom, currentUser, messages } = this.state;
+
+        const styles = {
+            container: {
+                height: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+            },
+            chatContainer: {
+                display: 'flex',
+                flex: 1,
+            },
+            whosOnlineListContainer: {
+                width: '300px',
+                flex: 'none',
+                padding: 20,
+                backgroundColor: '#2c303b',
+                color: 'white',
+            },
+            chatListContainer: {
+                padding: 20,
+                width: '85%',
+                display: 'flex',
+                flexDirection: 'column',
+            },
+        }
+
         return (
-            <div>
-                <h1>Chat</h1>
-                <MessageList messages={this.state.messages} />
-                <p>{JSON.stringify(this.state.usersWhoAreTyping)}</p>
-                <SendMessageForm onSubmit={this.sendMessage} onChange={this.sendTypingEvent} />
+            <div style={styles.container}>
+                <div style={styles.chatContainer}>
+                    <aside style={styles.whosOnlineListContainer}>
+                        <WhosOnlineList currentUser={currentUser} users={currentRoom.users} />
+                    </aside>
+                    <section style={styles.chatListContainer}>
+                        <MessageList messages={messages} />
+                        <TypingIndicator usersWhoAreTyping={usersWhoAreTyping} />
+                        <SendMessageForm onSubmit={this.sendMessage} onChange={this.sendTypingEvent} />
+                    </section>
+                </div>
             </div>
         )
     }
